@@ -1,0 +1,83 @@
+body {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.grid {
+	display: inline-block;
+	border: 1px solid black;
+}
+
+.row {
+	display: block;
+}
+
+.cell {
+	display: inline-block;
+	border: 1px solid lightgray;
+	width: 4em;
+	height: 4em;
+	line-height: 4em;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.cell.fixed {
+	background-color: darkgray;
+	color: white;
+}
+
+.cell.final .cell-content {
+	font-size: 3em;
+}
+
+.cell.hor-first {
+	border-left: 1px solid black;
+}
+
+.cell.hor-last {
+	border-right: 1px solid black;
+}
+
+.cell.ver-first {
+	border-top: 1px solid black;
+}
+
+.cell.ver-last {
+	border-bottom: 1px solid black;
+}
+
+.options {
+	display: inline-block;
+	width: 3em;
+	height: 3em;
+}
+
+.options-row {
+	display: block;
+}
+
+.options-cell {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	line-height: 1em;
+	text-align: center;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+.options-cell:hover {
+	background-color: yellow;
+}
+
+.options-cell.hide:hover {
+	background-color: lightgray;
+}
+
+.options-cell.hide .options-content {
+	display: none;
+}
+
+.options-cell.hide:hover .options-content {
+	display: inline;
+}
