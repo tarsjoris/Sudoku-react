@@ -16,16 +16,16 @@ const createToggleOption = (cellX, cellY, option) => {
 
 /* Components */
 
-const OptionBase = ({options, option, onClick}) => {
+const OptionBase = ({options, option, toggle}) => {
 	var classes = 'options-cell'
 	if (options.indexOf(option) === -1) {
 		classes += ' hide'
 	}
-	return <div className={classes} onClick={onClick}><span className="options-content">{option}</span></div>	
+	return <div className={classes} onClick={toggle}><span className="options-content">{option}</span></div>	
 }
 const mapDispatchToOptionProps = (dispatch, ownProps) => {
 	return {
-		onClick: () => {
+		toggle: () => {
 			dispatch(createToggleOption(ownProps.cellX, ownProps.cellY, ownProps.option))
 		}
 	}

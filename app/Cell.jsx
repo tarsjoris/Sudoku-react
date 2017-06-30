@@ -4,6 +4,16 @@ import * as constants from './constants.jsx'
 import {Options} from './Options.jsx'
 
 
+/* Action providers */
+
+const createEliminate = (cellX, cellY) => {
+	return {
+		type: constants.GRID_ACTION_ELIMINATE,
+		cellX,
+		cellY
+	}
+}
+
 /* Reducers */
 
 export const cellReducer = (state, action) => {
@@ -26,7 +36,7 @@ export const cellReducer = (state, action) => {
 
 /* Components */
 
-export const Cell = ({cell}) => {
+const CellBase = ({cell, eliminate}) => {
 	var options = cell.options
 	var classes = 'cell'
 	switch (cell.cellX % 3) {
@@ -50,7 +60,7 @@ export const Cell = ({cell}) => {
 	}
 	if (options.length === 1) {
 		classes += ' final'
-		return <div className={classes}>
+		return <div className={classes} onClick={eliminate}>
 			<span className="cell-content">{options[0]}</span>
 		</div>
 	} else {
@@ -59,3 +69,14 @@ export const Cell = ({cell}) => {
 		</div>
 	}
 }
+const mapDispatchToCellProps = (dispatch, ownProps) => {
+	return {
+		eliminate: () => {
+			dispatch(createEliminate(ownProps.cell.cellX, ownProps.cell.cellY))
+		}
+	}
+}
+export const Cell = connect(
+	null,
+	mapDispatchToCellProps
+)(CellBase)

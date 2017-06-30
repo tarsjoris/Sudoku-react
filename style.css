@@ -30,6 +30,10 @@ body {
 	font-size: 3em;
 }
 
+.cell.fixed, .cell.final {
+	cursor: pointer;
+}
+
 .cell.hor-first {
 	border-left: 1px solid black;
 }

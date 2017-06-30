@@ -19,13 +19,26 @@ let history = []
 
 /* Reducers */
 
-const eliminateCell = (cell, rows) => {
+const eliminateCell = (cell, cellX, cellY, value) => {
+	if (cell.cellX === cellX || cell.cellY === cellY ||
+	(Math.floor(cell.cellX / 3) === Math.floor(cellX / 3) && Math.floor(cell.cellY / 3) === Math.floor(cellY / 3))) {
+		if (cell.options.length > 1) {
+			const index = cell.options.indexOf(value)
+			if (index !== -1) {
+				const returnv = {
+					...cell,
+					options: [ ...cell.options.slice(0, index), ...cell.options.slice(index + 1) ]
+				}
+				return returnv
+			}
+		}
+	}
 	return cell
 }
-const eliminateRow = (row, rows) => {
+const eliminateRow = (row, cellX, cellY, value) => {
 	return {
 		...row,
-		cells: row.cells.map(cell => eliminateCell(cell, rows))
+		cells: row.cells.map(cell => eliminateCell(cell, cellX, cellY, value))
 	}
 }
 const parseOutline = (outline) => {
@@ -33,9 +46,9 @@ const parseOutline = (outline) => {
 	for (var y = 0; y < 9; ++y) {
 		var cells = []
 		for (var x = 0; x < 9; ++x) {
-			var index = y * 9 + x
-			var ch = outline.charAt(index)
-			var fixed = ch !== '.'
+			const index = y * 9 + x
+			const ch = outline.charAt(index)
+			const fixed = ch !== '.'
 			cells.push({
 				id: 'cell-' + index,
 				cellX: x,
@@ -64,10 +77,21 @@ export const gridReducer = (state = parseOutline(outline), action) => {
 			}
 		case constants.GRID_ACTION_ELIMINATE:
 			history.push(state)
-			return {
-				...state,
-				rows: state.rows.map(row => eliminateRow(row, state.rows))
+			const cellX = action.cellX
+			const cellY = action.cellY
+			if (cellY >= 0 && cellY < state.rows.length) {
+				const row = state.rows[cellY]
+				if (cellX >= 0 && cellX < row.cells.length) {
+					const cell = row.cells[cellX]
+					if (cell.options.length === 1) {
+						return {
+							...state,
+							rows: state.rows.map(row => eliminateRow(row, cellX, cellY, cell.options[0]))
+						}
+					}
+				}
 			}
+			return state
 		case constants.GRID_ACTION_UNDO:
 			if (history.length > 0) {
 				return history.pop()
