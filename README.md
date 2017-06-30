@@ -4,4 +4,4 @@ npm i webpack webpack-dev-server babel-core babel-loader babel-preset-es2015 bab
 
 # How to start
 
-npm start
+./start.sh
