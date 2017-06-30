@@ -4,6 +4,7 @@ import * as constants from './constants.jsx'
 import {Row, rowReducer} from './Row.jsx'
 
 
+const aid = true
 const outline =
 "........." +
 "2.7...4.6" +
@@ -19,77 +20,62 @@ let history = []
 
 /* Reducers */
 
-const eliminateCell = (cell, cellX, cellY, value) => {
-	if (cell.cellX === cellX || cell.cellY === cellY ||
-	(Math.floor(cell.cellX / 3) === Math.floor(cellX / 3) && Math.floor(cell.cellY / 3) === Math.floor(cellY / 3))) {
+const eliminateCell = (cell, sourceCell, workQueue) => {
+	if (cell.cellX === sourceCell.cellX // same column
+		|| cell.cellY === sourceCell.cellY // same row
+		|| (Math.floor(cell.cellX / 3) === Math.floor(sourceCell.cellX / 3) // same block
+			&& Math.floor(cell.cellY / 3) === Math.floor(sourceCell.cellY / 3))) {
 		if (cell.options.length > 1) {
-			const index = cell.options.indexOf(value)
+			const index = cell.options.indexOf(sourceCell.options[0])
 			if (index !== -1) {
-				const returnv = {
+				const options = [ ...cell.options.slice(0, index), ...cell.options.slice(index + 1) ]
+				const newCell = {
 					...cell,
-					options: [ ...cell.options.slice(0, index), ...cell.options.slice(index + 1) ]
+					options
 				}
-				return returnv
+				if (aid && options.length === 1) {
+					workQueue.push(newCell)
+				}
+				return newCell
 			}
 		}
 	}
 	return cell
 }
-const eliminateRow = (row, cellX, cellY, value) => {
+const eliminateRow = (row, sourceCell, workQueue) => {
 	return {
 		...row,
-		cells: row.cells.map(cell => eliminateCell(cell, cellX, cellY, value))
+		cells: row.cells.map(cell => eliminateCell(cell, sourceCell, workQueue))
 	}
 }
-const parseOutline = (outline) => {
-	var rows = []
-	for (var y = 0; y < 9; ++y) {
-		var cells = []
-		for (var x = 0; x < 9; ++x) {
-			const index = y * 9 + x
-			const ch = outline.charAt(index)
-			const fixed = ch !== '.'
-			cells.push({
-				id: 'cell-' + index,
-				cellX: x,
-				cellY: y,
-				fixed,
-				options: fixed ? [ch - '0'] : [1, 2, 3, 4, 5, 6, 7, 8, 9]
-			})
+const eliminate = (state, workQueue) => {
+	var newState = state
+	while (workQueue.length > 0) {
+		const sourceCell = workQueue.shift()
+		newState = {
+			...newState,
+			rows: newState.rows.map(row => eliminateRow(row, sourceCell, workQueue))
 		}
-		rows.push({
-			id: 'row-' + y,
-			cellY: y,
-			cells
-		})
 	}
-	return {
-		rows
-	}
+	return newState
 }
 export const gridReducer = (state = parseOutline(outline), action) => {
 	switch (action.type) {
 		case constants.GRID_ACTION_TOGGLE:
 			history.push(state)
-			return {
+			var newState = {
 				...state,
 				rows: state.rows.map(row => rowReducer(row, action))
 			}
+			const cell = newState.rows[action.cellY].cells[action.cellX]
+			if (aid && cell.options.length === 1) {
+				newState = eliminate(newState, [cell])
+			}
+			return newState
 		case constants.GRID_ACTION_ELIMINATE:
-			history.push(state)
-			const cellX = action.cellX
-			const cellY = action.cellY
-			if (cellY >= 0 && cellY < state.rows.length) {
-				const row = state.rows[cellY]
-				if (cellX >= 0 && cellX < row.cells.length) {
-					const cell = row.cells[cellX]
-					if (cell.options.length === 1) {
-						return {
-							...state,
-							rows: state.rows.map(row => eliminateRow(row, cellX, cellY, cell.options[0]))
-						}
-					}
-				}
+			if (action.cell.options.length === 1) {
+				history.push(state)
+				return eliminate(state, [action.cell])
 			}
 			return state
 		case constants.GRID_ACTION_UNDO:
@@ -101,6 +87,36 @@ export const gridReducer = (state = parseOutline(outline), action) => {
 		default:
 			return state
 	}
+}
+const parseOutline = (outline) => {
+	var rows = []
+	var workQueue = []
+	for (var y = 0; y < 9; ++y) {
+		var cells = []
+		for (var x = 0; x < 9; ++x) {
+			const index = y * 9 + x
+			const ch = outline.charAt(index)
+			const fixed = ch !== '.'
+			const cell = {
+				id: 'cell-' + index,
+				cellX: x,
+				cellY: y,
+				fixed,
+				options: fixed ? [ch - '0'] : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+			}
+			if (fixed) {
+				workQueue.push(cell)
+			}
+			cells.push(cell)
+		}
+		rows.push({
+			id: 'row-' + y,
+			cellY: y,
+			cells
+		})
+	}
+	const state = { rows}
+	return aid ? eliminate(state, workQueue) : state
 }
 
 /* Components */

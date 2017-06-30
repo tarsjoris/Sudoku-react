@@ -6,11 +6,10 @@ import {Options} from './Options.jsx'
 
 /* Action providers */
 
-const createEliminate = (cellX, cellY) => {
+const createEliminate = (cell) => {
 	return {
 		type: constants.GRID_ACTION_ELIMINATE,
-		cellX,
-		cellY
+		cell
 	}
 }
 
@@ -72,7 +71,7 @@ const CellBase = ({cell, eliminate}) => {
 const mapDispatchToCellProps = (dispatch, ownProps) => {
 	return {
 		eliminate: () => {
-			dispatch(createEliminate(ownProps.cell.cellX, ownProps.cell.cellY))
+			dispatch(createEliminate(ownProps.cell))
 		}
 	}
 }
