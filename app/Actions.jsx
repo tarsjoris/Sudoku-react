@@ -1,13 +1,13 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import * as constants from './constants.jsx'
+import * as common from './common.jsx'
 
 
 /* Action providers */
 
 const createUndo = () => {
 	return {
-		type: constants.GRID_ACTION_UNDO
+		type: common.GRID_ACTION_UNDO
 	}
 }
 

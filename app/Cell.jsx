@@ -1,6 +1,6 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import * as constants from './constants.jsx'
+import * as common from './common.jsx'
 import {Options} from './Options.jsx'
 
 
@@ -8,7 +8,7 @@ import {Options} from './Options.jsx'
 
 const createEliminate = (cell) => {
 	return {
-		type: constants.GRID_ACTION_ELIMINATE,
+		type: common.GRID_ACTION_ELIMINATE,
 		cell
 	}
 }
@@ -17,8 +17,8 @@ const createEliminate = (cell) => {
 
 export const cellReducer = (state, action) => {
 	switch (action.type) {
-		case constants.GRID_ACTION_TOGGLE:
-			if (state.cellX === action.cellX) {
+		case common.GRID_ACTION_TOGGLE:
+			if (state.cellX === action.cellX && state.cellY === action.cellY) {
 				var index = state.options.indexOf(action.option)
 				var options = index === -1 ? [ ...state.options, action.option] : [ ...state.options.slice(0, index), ...state.options.slice(index + 1)]
 				return {
@@ -38,24 +38,27 @@ export const cellReducer = (state, action) => {
 const CellBase = ({cell, eliminate}) => {
 	var options = cell.options
 	var classes = 'cell'
-	switch (cell.cellX % 3) {
+	switch (cell.cellX % common.SIZE) {
 		case 0:
 			classes += ' hor-first'
 			break
-		case 2:
+		case common.SIZE - 1:
 			classes += ' hor-last'
 			break
 	}
-	switch (cell.cellY % 3) {
+	switch (cell.cellY % common.SIZE) {
 		case 0:
 			classes += ' ver-first'
 			break
-		case 2:
+		case common.SIZE - 1:
 			classes += ' ver-last'
 			break
 	}
 	if (cell.fixed) {
 		classes += ' fixed'
+	}
+	if (cell.invalid) {
+		classes += ' invalid'
 	}
 	if (options.length === 1) {
 		classes += ' final'

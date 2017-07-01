@@ -1,10 +1,9 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import * as constants from './constants.jsx'
-import {Row, rowReducer} from './Row.jsx'
+import * as common from './common.jsx'
+import {Cell, cellReducer} from './Cell.jsx'
 
 
-const aid = true
 const outline =
 "........." +
 "2.7...4.6" +
@@ -20,65 +19,90 @@ let history = []
 
 /* Reducers */
 
-const eliminateCell = (cell, sourceCell, workQueue) => {
-	if (cell.cellX === sourceCell.cellX // same column
-		|| cell.cellY === sourceCell.cellY // same row
-		|| (Math.floor(cell.cellX / 3) === Math.floor(sourceCell.cellX / 3) // same block
-			&& Math.floor(cell.cellY / 3) === Math.floor(sourceCell.cellY / 3))) {
-		if (cell.options.length > 1) {
-			const index = cell.options.indexOf(sourceCell.options[0])
-			if (index !== -1) {
-				const options = [ ...cell.options.slice(0, index), ...cell.options.slice(index + 1) ]
-				const newCell = {
-					...cell,
-					options
-				}
-				if (aid && options.length === 1) {
-					workQueue.push(newCell)
-				}
-				return newCell
+const validateGrid = (state) => {
+	const invalidCells = new Set()
+	common.ZONES.zonesToCells.forEach((zoneToCells) => {
+		for (var value = 0; value < common.SIZE * common.SIZE; ++value) {
+			const conflictingCells = zoneToCells.filter(index => state.cells[index].options.length === 1 && state.cells[index].options[0] === value)
+			if (conflictingCells.length > 1) {
+				conflictingCells.forEach(index => invalidCells.add(index))
 			}
+		}
+	})
+	if (invalidCells.size > 0) {
+		return {
+			...state,
+			cells: state.cells.map((cell, index) => {
+				if (invalidCells.has(index)) {
+					return {
+						...cell,
+						invalid: true
+					}
+				} else {
+					return cell
+				}
+			})
+		}
+	} else {
+		return state
+	}
+}
+const eliminateCell = (cell, value, workQueue) => {
+	if (cell.options.length > 1) {
+		const index = cell.options.indexOf(value)
+		if (index !== -1) {
+			const newCell = {
+				...cell,
+				options: [ ...cell.options.slice(0, index), ...cell.options.slice(index + 1) ]
+			}
+			if (common.AID && newCell.options.length === 1) {
+				workQueue.push(newCell)
+			}
+			return newCell
 		}
 	}
 	return cell
-}
-const eliminateRow = (row, sourceCell, workQueue) => {
-	return {
-		...row,
-		cells: row.cells.map(cell => eliminateCell(cell, sourceCell, workQueue))
-	}
 }
 const eliminate = (state, workQueue) => {
 	var newState = state
 	while (workQueue.length > 0) {
 		const sourceCell = workQueue.shift()
-		newState = {
-			...newState,
-			rows: newState.rows.map(row => eliminateRow(row, sourceCell, workQueue))
-		}
+		const value = sourceCell.options[0]
+		const cellToZones = common.ZONES.cellsToZones[common.cellIndex(sourceCell.cellX, sourceCell.cellY)]
+		cellToZones.forEach(zone =>
+			common.ZONES.zonesToCells[zone].forEach(index => {
+				newState = {
+					...newState,
+					cells: [
+						...newState.cells.slice(0, index),
+						eliminateCell(newState.cells[index], value, workQueue),
+						...newState.cells.slice(index + 1)
+					]
+				}
+			}))
 	}
 	return newState
 }
 export const gridReducer = (state = parseOutline(outline), action) => {
 	switch (action.type) {
-		case constants.GRID_ACTION_TOGGLE:
+		case common.GRID_ACTION_TOGGLE:
 			history.push(state)
 			var newState = {
 				...state,
-				rows: state.rows.map(row => rowReducer(row, action))
+				cells: state.cells.map(cell => cellReducer(cell, action))
 			}
-			const cell = newState.rows[action.cellY].cells[action.cellX]
-			if (aid && cell.options.length === 1) {
+			const cell = newState.cells[common.cellIndex(action.cellX, action.cellY)]
+			if (common.AID && cell.options.length === 1) {
 				newState = eliminate(newState, [cell])
 			}
-			return newState
-		case constants.GRID_ACTION_ELIMINATE:
+			return validateGrid(newState)
+		case common.GRID_ACTION_ELIMINATE:
 			if (action.cell.options.length === 1) {
 				history.push(state)
-				return eliminate(state, [action.cell])
+				return validateGrid(eliminate(state, [action.cell]))
 			}
 			return state
-		case constants.GRID_ACTION_UNDO:
+		case common.GRID_ACTION_UNDO:
 			if (history.length > 0) {
 				return history.pop()
 			} else {
@@ -89,12 +113,11 @@ export const gridReducer = (state = parseOutline(outline), action) => {
 	}
 }
 const parseOutline = (outline) => {
-	var rows = []
+	var cells = []
 	var workQueue = []
-	for (var y = 0; y < 9; ++y) {
-		var cells = []
-		for (var x = 0; x < 9; ++x) {
-			const index = y * 9 + x
+	for (var y = 0; y < common.SIZE * common.SIZE; ++y) {
+		for (var x = 0; x < common.SIZE * common.SIZE; ++x) {
+			const index = common.cellIndex(x, y)
 			const ch = outline.charAt(index)
 			const fixed = ch !== '.'
 			const cell = {
@@ -102,6 +125,7 @@ const parseOutline = (outline) => {
 				cellX: x,
 				cellY: y,
 				fixed,
+				invalid: false,
 				options: fixed ? [ch - '0'] : [1, 2, 3, 4, 5, 6, 7, 8, 9]
 			}
 			if (fixed) {
@@ -109,22 +133,29 @@ const parseOutline = (outline) => {
 			}
 			cells.push(cell)
 		}
-		rows.push({
-			id: 'row-' + y,
-			cellY: y,
-			cells
-		})
 	}
-	const state = { rows}
-	return aid ? eliminate(state, workQueue) : state
+	var state = { cells }
+	if (common.AID) {
+		state = eliminate(state, workQueue)
+	}
+	state = validateGrid(state)
+	return state
 }
 
 /* Components */
 
 const GridBase = ({grid}) => {
-	return <div className="grid">
-		{grid.rows.map(row => <Row key={row.id} row={row}/>)}
-	</div>
+	const rows = []
+	for (var y = 0; y < common.SIZE * common.SIZE; ++y) {
+		const cells = []
+		for (var x = 0; x < common.SIZE * common.SIZE; ++x) {
+			const cell = grid.cells[common.cellIndex(x, y)]
+			cells.push(<Cell key={cell.id} cell={cell}/>)
+		}
+		const rowID = 'row-' + y
+		rows.push(<div key={rowID} className="row">{cells}</div>)
+	}
+	return <div className="grid">{rows}</div>
 }
 const mapStateToGridProps = (state, ownProps) => {
 	return {

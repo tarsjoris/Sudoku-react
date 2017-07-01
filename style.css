@@ -21,6 +21,10 @@ body {
 	vertical-align: middle;
 }
 
+.cell.invalid {
+	background-color: red;
+}
+
 .cell.fixed {
 	background-color: darkgray;
 	color: white;

@@ -1,13 +1,13 @@
 import React from 'react'
 import {connect} from 'react-redux'
-import * as constants from './constants.jsx'
+import * as common from './common.jsx'
 
 
 /* Action providers */
 
 const createToggleOption = (cellX, cellY, option) => {
 	return {
-		type: constants.GRID_ACTION_TOGGLE,
+		type: common.GRID_ACTION_TOGGLE,
 		cellX,
 		cellY,
 		option
@@ -37,10 +37,10 @@ const Option = connect(
 
 export const Options = ({cellID, cellX, cellY, options}) => {
 	var rows = []
-	for (var y = 0; y < 3; ++y) {
+	for (var y = 0; y < common.SIZE; ++y) {
 		var cells = []
-		for (var x = 0; x < 3; ++x) {
-			var index = y * 3 + x
+		for (var x = 0; x < common.SIZE; ++x) {
+			var index = y * common.SIZE + x
 			var key = cellID + '-option-' + index
 			var option = index + 1
 			cells.push(<Option key={key} cellX={cellX} cellY={cellY} options={options} option={option}/>)
